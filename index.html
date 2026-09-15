@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第29回神奈川県知事杯エントリーフォーム</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 40px auto; padding: 0 20px; }
+    .form-group { margin-bottom: 15px; }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input[type="text"], input[type="tel"], input[type="email"] { width: 100%; padding: 8px; box-sizing: border-box; }
+    input:disabled { background-color: #e9ecef; cursor: not-allowed; }
+    button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; font-size: 16px; cursor: pointer; }
+    button:disabled { background-color: #ccc; cursor: not-allowed; }
+    
+    /* チェックボックス・ラジオボタン用のレイアウト */
+    .checkbox-group { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-weight: normal; font-size: 14px; cursor: pointer; }
+    .checkbox-group input { width: auto; cursor: pointer; }
+    .radio-group { display: flex; gap: 20px; margin-top: 6px; font-weight: normal; }
+    .radio-group label { display: flex; align-items: center; gap: 6px; font-weight: normal; cursor: pointer; margin-bottom: 0; }
+    .radio-group input { cursor: pointer; }
+
+    /* アナウンス表示スタイル */
+    #statusNotice { margin-bottom: 20px; padding: 12px; border-radius: 4px; font-weight: bold; text-align: center; }
+    .notice-before { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    .notice-open { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .notice-ended { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+
+    #result { margin-top: 20px; padding: 15px; border-radius: 4px; display: none; }
+    .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+  </style>
+</head>
+<body>
+
+  <h2>第29回神奈川県知事杯エントリーフォーム</h2>
+
+  <!-- 受付ステータスアナウンス枠 -->
+  <div id="statusNotice" class="notice-before">確認中...</div>
+
+  <form id="entryForm" onsubmit="return false;">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="last_name_kanji">姓（漢字）</label>
+        <input type="text" id="last_name_kanji" required placeholder="例：神奈川">
+      </div>
+      <div class="form-group">
+        <label for="first_name_kanji">名（漢字）</label>
+        <input type="text" id="first_name_kanji" required placeholder="例：太郎">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="last_name_furigana">セイ（フリガナ）</label>
+        <input type="text" id="last_name_furigana" required placeholder="例：カナガワ">
+      </div>
+      <div class="form-group">
+        <label for="first_name_furigana">メイ（フリガナ）</label>
+        <input type="text" id="first_name_furigana" required placeholder="例：タロウ">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="member_id">CSカード番号</label>
+      <input type="text" id="member_id" required placeholder="例：10099999">
+      <label class="checkbox-group">
+        <input type="checkbox" id="cs_pending" onchange="toggleCsPending(this)">
+        CSカード申請中（番号未発行の方）
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label for="class_rank">クラス</label>
+      <input type="text" id="class_rank" required placeholder="例：A">
+    </div>
+
+    <!-- 追加：JAPA連盟所属 -->
+    <div class="form-group">
+      <label>JAPA連盟所属</label>
+      <div class="radio-group">
+        <label><input type="radio" name="is_japa_member" value="true"> はい</label>
+        <label><input type="radio" name="is_japa_member" value="false" checked> いいえ</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="store_affiliation">所属店舗</label>
+      <input type="text" id="store_affiliation" required placeholder="例：ミッドナイト">
+    </div>
+
+    <div class="form-group">
+      <label for="phone">電話番号</label>
+      <input type="tel" id="phone" required placeholder="例：090-1234-5678">
+    </div>
+
+    <div class="form-group">
+      <label for="email">メールアドレス</label>
+      <input type="email" id="email" required placeholder="例：test@example.com">
+    </div>
+    <br>
+    <button type="button" id="submitBtn" onclick="submitEntry()" disabled>送信不可</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    // --------------------------------------------------
+    // 設定項目：受付開始日時・終了日時（ISO形式）
+    // テスト時は過去の日時・未来の日時に変更して動作を確認してください
+    // --------------------------------------------------
+    const ENTRY_START_AT = "2026-09-01T00:00:00+09:00"; // 開始日時
+    const ENTRY_END_AT   = "2026-09-30T23:59:59+09:00"; // 終了日時
+
+    const SUPABASE_URL = 'https://ilwvhrffpsdtrzpynafy.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_NaDQwcft5erHFQcY8BL8Lw_JY7EuadY';
+
+    let supabaseClient;
+    try {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } catch (e) {
+      console.error('Supabase初期化失敗:', e);
+    }
+
+    // CSカード申請中チェックボックスの切替処理
+    function toggleCsPending(checkbox) {
+      const memberIdInput = document.getElementById('member_id');
+      if (checkbox.checked) {
+        memberIdInput.value = '';
+        memberIdInput.disabled = true;
+        memberIdInput.required = false;
+      } else {
+        memberIdInput.disabled = false;
+        memberIdInput.required = true;
+      }
+    }
+
+    // エントリー時間制御と表示更新を行う関数
+    function updateEntryStatus() {
+      const now = new Date();
+      const startDate = new Date(ENTRY_START_AT);
+      const endDate = new Date(ENTRY_END_AT);
+
+      const submitBtn = document.getElementById('submitBtn');
+      const noticeDiv = document.getElementById('statusNotice');
+
+      if (now < startDate) {
+        // 1. 受付開始前
+        submitBtn.disabled = true;
+        submitBtn.innerText = '受付開始前です';
+        noticeDiv.className = 'notice-before';
+        noticeDiv.innerText = `【受付前】受付開始は ${startDate.toLocaleString('ja-JP')} からです`;
+        return 'BEFORE';
+      } else if (now > endDate) {
+        // 2. 受付終了後
+        submitBtn.disabled = true;
+        submitBtn.innerText = '受付終了しました';
+        noticeDiv.className = 'notice-ended';
+        noticeDiv.innerText = '【受付終了】エントリーの受付は終了いたしました';
+        return 'ENDED';
+      } else {
+        // 3. 受付期間内
+        submitBtn.disabled = false;
+        submitBtn.innerText = '送信する';
+        noticeDiv.className = 'notice-open';
+        noticeDiv.innerText = `【受付中】締切: ${endDate.toLocaleString('ja-JP')}`;
+        return 'OPEN';
+      }
+    }
+
+    // 初回実行 ＆ 1秒ごとにステータス監視
+    updateEntryStatus();
+    setInterval(updateEntryStatus, 1000);
+
+    // 送信処理関数
+    async function submitEntry() {
+      const currentStatus = updateEntryStatus();
+      if (currentStatus !== 'OPEN') {
+        alert('現在エントリー受付期間外です。');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      const resultDiv = document.getElementById('result');
+
+      const last_name_kanji = document.getElementById('last_name_kanji').value;
+      const first_name_kanji = document.getElementById('first_name_kanji').value;
+      const last_name_furigana = document.getElementById('last_name_furigana').value;
+      const first_name_furigana = document.getElementById('first_name_furigana').value;
+      const member_id = document.getElementById('member_id').value;
+      const is_cs_pending = document.getElementById('cs_pending').checked;
+      const class_rank = document.getElementById('class_rank').value;
+      
+      // JAPA連盟所属の値を取得
+      const is_japa_member_val = document.querySelector('input[name="is_japa_member"]:checked').value === 'true';
+
+      const store_affiliation = document.getElementById('store_affiliation').value;
+      const phone = document.getElementById('phone').value;
+      const email = document.getElementById('email').value;
+
+      // バリデーションチェック
+      if (!last_name_kanji || !first_name_kanji || !last_name_furigana || !first_name_furigana || 
+          (!is_cs_pending && !member_id) || !class_rank || !store_affiliation || !phone || !email) {
+        alert('すべての必須項目を入力してください。');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = '送信中...';
+      resultDiv.style.display = 'none';
+
+      try {
+        const { data, error } = await supabaseClient.rpc('submit_entry', {
+          p_last_name_kanji: last_name_kanji,
+          p_first_name_kanji: first_name_kanji,
+          p_last_name_furigana: last_name_furigana,
+          p_first_name_furigana: first_name_furigana,
+          p_member_id: member_id,
+          p_class_rank: class_rank,
+          p_store_affiliation: store_affiliation,
+          p_phone: phone,
+          p_email: email,
+          p_start_at: ENTRY_START_AT,
+          p_end_at: ENTRY_END_AT,
+          p_capacity: 96,
+          p_is_cs_pending: is_cs_pending,
+          p_is_japa_member: is_japa_member_val
+        });
+
+        if (error) throw error;
+
+        if (data.success) {
+          resultDiv.className = 'success';
+          resultDiv.innerHTML = `
+            <strong>${data.message}</strong><br>
+            受付順: <strong>第 ${data.entry_number} 番</strong><br>
+            ステータス: <strong>${data.status === 'confirmed' ? '枠内確定' : 'キャンセル待ち'}</strong><br>
+            エントリーID: #${data.entry_id}
+          `;
+        } else {
+          resultDiv.className = 'error';
+          resultDiv.innerHTML = `<strong>エラー:</strong> ${data.message}`;
+        }
+        resultDiv.style.display = 'block';
+
+      } catch (err) {
+        console.error('送信エラー詳細:', err);
+        resultDiv.className = 'error';
+        resultDiv.innerText = `送信エラーが発生しました: ${err.message || JSON.stringify(err)}`;
+        resultDiv.style.display = 'block';
+      } finally {
+        updateEntryStatus();
+      }
+    }
+  </script>
+
+</body>
+</html>
