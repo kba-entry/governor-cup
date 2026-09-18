@@ -215,16 +215,17 @@
   <script>
     // --- ★Supabase接続情報の設定 ---
     // ※ index.html で使用されているものと同じURL・キーを設定してください
-    const SUPABASE_URL = 'https://ilwvhrffpsdtrzpynafy.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_NaDQwcft5erHFQcY8BL8Lw_JY7EuadY';
+    const SUPABASE_URL = 'https://YOUR_SUPABASE_PROJECT_ID.supabase.co';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
     
     // パスワード設定
     const ADMIN_PASSWORD = 'admin2026';
 
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Supabaseクライアントの初期化（変数名を AppSupabase に変更して衝突を回避）
+    const AppSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentEntriesData = [];
 
-    // パスワード認証（ローカルストレージ保持）
+    // パスワード認証（セッション状態の確認）
     window.addEventListener('DOMContentLoaded', () => {
       if (sessionStorage.getItem('admin_authenticated') === 'true') {
         showDashboard();
@@ -258,7 +259,7 @@
       tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;">最新データを取得中...</td></tr>';
 
       try {
-        const { data, error } = await supabase
+        const { data, error } = await AppSupabase
           .from('entries')
           .select('*')
           .order('created_at', { ascending: true });
@@ -318,7 +319,7 @@
       document.getElementById('stat-waiting').innerText = waiting;
     }
 
-    // CSVダウンロード機能（BOM付きUTF-8で文字化け防止）
+    // CSVダウンロード機能（BOM付きUTF-8）
     function downloadCSV() {
       if (currentEntriesData.length === 0) {
         alert('出力対象のエントリーデータがありません。');
@@ -348,14 +349,12 @@
         item.email || ''
       ]);
 
-      // CSV出力組み立て（カンマエスケープ対応）
       let csvContent = "\uFEFF" + headers.join(",") + "\n";
       rows.forEach(row => {
         const line = row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(",");
         csvContent += line + "\n";
       });
 
-      // Blobでファイルダウンロード
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
