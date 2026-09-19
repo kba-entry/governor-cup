@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>【KPBA専用】第29回神奈川県知事杯 先行エントリーフォーム</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 40px auto; padding: 0 20px; }
+    .form-group { margin-bottom: 15px; }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input[type="text"], input[type="tel"], input[type="email"], input[type="password"] { width: 100%; padding: 8px; box-sizing: border-box; }
+    input:disabled { background-color: #e9ecef; cursor: not-allowed; }
+    button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; font-size: 16px; cursor: pointer; }
+    button:disabled { background-color: #ccc; cursor: not-allowed; }
+    
+    /* チェックボックス・ラジオボタン用のレイアウト */
+    .checkbox-group { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-weight: normal; font-size: 14px; cursor: pointer; }
+    .checkbox-group input { width: auto; cursor: pointer; }
+    .radio-group { display: flex; gap: 20px; margin-top: 6px; font-weight: normal; }
+    .radio-group label { display: flex; align-items: center; gap: 6px; font-weight: normal; cursor: pointer; margin-bottom: 0; }
+    .radio-group input { cursor: pointer; }
+
+    /* アナウンス表示スタイル */
+    #statusNotice { margin-bottom: 20px; padding: 12px; border-radius: 4px; font-weight: bold; text-align: center; }
+    .notice-kpba { background-color: #e2e3e5; color: #1b1e21; border: 1px solid #d6d8db; }
+
+    #result { margin-top: 20px; padding: 15px; border-radius: 4px; display: none; }
+    .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+    /* パスワード認証モーダル */
+    #authOverlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 1000;
+    }
+    .auth-box {
+      background: #fff; padding: 25px; border-radius: 8px; width: 90%; max-width: 350px; text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    #authError { color: #dc3545; margin-top: 10px; font-size: 14px; display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- パスワード認証モーダル -->
+  <div id="authOverlay">
+    <div class="auth-box">
+      <h3>【KPBA関係者専用】</h3>
+      <p style="font-size: 14px; color: #666;">パスワードを入力してください</p>
+      <input type="password" id="authPassword" placeholder="パスワード" style="margin-bottom: 12px;" onkeydown="if(event.key==='Enter') verifyPassword()">
+      <button type="button" onclick="verifyPassword()">認証</button>
+      <div id="authError">パスワードが正しくありません</div>
+    </div>
+  </div>
+
+  <!-- メインコンテンツ（認証後に表示） -->
+  <div id="mainContent" style="display: none;">
+
+    <h2>第29回神奈川県知事杯<br><span style="color: #007bff; font-size: 0.8em;">【KPBA先行エントリー】</span></h2>
+
+    <div id="statusNotice" class="notice-kpba">【KPBA連盟員専用受付フォーム】</div>
+
+    <form id="entryForm" onsubmit="return false;">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="last_name_kanji">姓（漢字）</label>
+          <input type="text" id="last_name_kanji" required placeholder="例：神奈川">
+        </div>
+        <div class="form-group">
+          <label for="first_name_kanji">名（漢字）</label>
+          <input type="text" id="first_name_kanji" required placeholder="例：太郎">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="last_name_furigana">セイ（フリガナ）</label>
+          <input type="text" id="last_name_furigana" required placeholder="例：カナガワ">
+        </div>
+        <div class="form-group">
+          <label for="first_name_furigana">メイ（フリガナ）</label>
+          <input type="text" id="first_name_furigana" required placeholder="例：タロウ">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="member_id">CSカード番号</label>
+        <input type="text" id="member_id" required placeholder="例：10099999">
+        <label class="checkbox-group">
+          <input type="checkbox" id="cs_pending" onchange="toggleCsPending(this)">
+          CSカード申請中（番号未発行の方）
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label for="class_rank">クラス</label>
+        <input type="text" id="class_rank" required placeholder="例：A">
+      </div>
+
+      <div class="form-group">
+        <label>JAPA連盟所属</label>
+        <div class="radio-group">
+          <!-- KPBA先行用のため「はい」をデフォルトチェック -->
+          <label><input type="radio" name="is_japa_member" value="true" checked> はい</label>
+          <label><input type="radio" name="is_japa_member" value="false"> いいえ</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="store_affiliation">所属店舗（所属連盟）</label>
+        <input type="text" id="store_affiliation" required value="KPBA">
+      </div>
+
+      <div class="form-group">
+        <label for="phone">電話番号</label>
+        <input type="tel" id="phone" required placeholder="例：090-1234-5678">
+      </div>
+
+      <div class="form-group">
+        <label for="email">メールアドレス</label>
+        <input type="email" id="email" required placeholder="例：test@example.com">
+      </div>
+      <br>
+      <button type="button" id="submitBtn" onclick="submitEntry()">送信する</button>
+    </form>
+
+    <div id="result"></div>
+
+  </div>
+
+  <script>
+    const PASSWORD_ADMIN = "admin2026";
+
+    const SUPABASE_URL = 'https://ilwvhrffpsdtrzpynafy.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_NaDQwcft5erHFQcY8BL8Lw_JY7EuadY';
+
+    let supabaseClient;
+    try {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } catch (e) {
+      console.error('Supabase初期化失敗:', e);
+    }
+
+    // パスワード認証機能
+    function verifyPassword() {
+      const inputPass = document.getElementById('authPassword').value;
+      const errorDiv = document.getElementById('authError');
+
+      if (inputPass === PASSWORD_ADMIN) {
+        document.getElementById('authOverlay').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+      } else {
+        errorDiv.style.display = 'block';
+      }
+    }
+
+    // CSカード申請中チェックボックスの切替処理
+    function toggleCsPending(checkbox) {
+      const memberIdInput = document.getElementById('member_id');
+      if (checkbox.checked) {
+        memberIdInput.value = '';
+        memberIdInput.disabled = true;
+        memberIdInput.required = false;
+      } else {
+        memberIdInput.disabled = false;
+        memberIdInput.required = true;
+      }
+    }
+
+    // 送信処理関数
+    async function submitEntry() {
+      const submitBtn = document.getElementById('submitBtn');
+      const resultDiv = document.getElementById('result');
+
+      const last_name_kanji = document.getElementById('last_name_kanji').value;
+      const first_name_kanji = document.getElementById('first_name_kanji').value;
+      const last_name_furigana = document.getElementById('last_name_furigana').value;
+      const first_name_furigana = document.getElementById('first_name_furigana').value;
+      const member_id = document.getElementById('member_id').value;
+      const is_cs_pending = document.getElementById('cs_pending').checked;
+      const class_rank = document.getElementById('class_rank').value;
+      const is_japa_member_val = document.querySelector('input[name="is_japa_member"]:checked').value === 'true';
+      const store_affiliation = document.getElementById('store_affiliation').value;
+      const phone = document.getElementById('phone').value;
+      const email = document.getElementById('email').value;
+
+      // バリデーションチェック
+      if (!last_name_kanji || !first_name_kanji || !last_name_furigana || !first_name_furigana || 
+          (!is_cs_pending && !member_id) || !class_rank || !store_affiliation || !phone || !email) {
+        alert('すべての必須項目を入力してください。');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = '送信中...';
+      resultDiv.style.display = 'none';
+
+      // 先行エントリー用のダミー受入期間パラメータ（確実に受付を通過させる）
+      const dummyStart = "2026-09-19T00:00:00+09:00";
+      const dummyEnd = "2026-10-16T23:59:59+09:00";
+
+      try {
+        const { data, error } = await supabaseClient.rpc('submit_entry', {
+          p_last_name_kanji: last_name_kanji,
+          p_first_name_kanji: first_name_kanji,
+          p_last_name_furigana: last_name_furigana,
+          p_first_name_furigana: first_name_furigana,
+          p_member_id: member_id,
+          p_class_rank: class_rank,
+          p_store_affiliation: store_affiliation,
+          p_phone: phone,
+          p_email: email,
+          p_start_at: dummyStart,
+          p_end_at: dummyEnd,
+          p_capacity: 112,
+          p_is_cs_pending: is_cs_pending,
+          p_is_japa_member: is_japa_member_val
+        });
+
+        if (error) throw error;
+
+        if (data.success) {
+          resultDiv.className = 'success';
+          resultDiv.innerHTML = `
+            <strong>${data.message}</strong><br>
+            受付順: <strong>第 ${data.entry_number} 番</strong><br>
+            ステータス: <strong>${data.status === 'confirmed' ? '枠内確定' : 'キャンセル待ち'}</strong><br>
+            エントリーID: #${data.entry_id}
+          `;
+          // 連続入力の誤動作防止のためフォームクリア等の制御も可能
+        } else {
+          resultDiv.className = 'error';
+          resultDiv.innerHTML = `<strong>エラー:</strong> ${data.message}`;
+        }
+        resultDiv.style.display = 'block';
+
+      } catch (err) {
+        console.error('送信エラー詳細:', err);
+        resultDiv.className = 'error';
+        resultDiv.innerText = `送信エラーが発生しました: ${err.message || JSON.stringify(err)}`;
+        resultDiv.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = '送信する';
+      }
+    }
+  </script>
+
+</body>
+</html>
