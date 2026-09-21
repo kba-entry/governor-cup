@@ -45,15 +45,14 @@
 </head>
 <body>
 
-  <!-- パスワード認証モーダル -->
+  <!-- パスワード認証モーダル（パスワード入力のみ） -->
   <div id="authOverlay">
     <div class="auth-box">
       <h3>【KPBA関係者専用】</h3>
-      <p style="font-size: 14px; color: #666;">管理者アカウント情報を入力してください</p>
-      <input type="email" id="authEmail" placeholder="メールアドレス" style="margin-bottom: 12px;">
+      <p style="font-size: 14px; color: #666;">パスワードを入力してください</p>
       <input type="password" id="authPassword" placeholder="パスワード" style="margin-bottom: 12px;" onkeydown="if(event.key==='Enter') verifyPassword()">
       <button type="button" id="authBtn" onclick="verifyPassword()">認証</button>
-      <div id="authError">ログイン情報が正しくありません</div>
+      <div id="authError">パスワードが正しくありません</div>
     </div>
   </div>
 
@@ -142,15 +141,14 @@
       console.error('Supabase初期化失敗:', e);
     }
 
-    // パスワード認証機能（Supabase Auth によるログイン検証）
+    // パスワード検証処理（RPC呼び出しによる検証）
     async function verifyPassword() {
-      const email = document.getElementById('authEmail').value;
       const password = document.getElementById('authPassword').value;
       const errorDiv = document.getElementById('authError');
       const authBtn = document.getElementById('authBtn');
 
-      if (!email || !password) {
-        errorDiv.innerText = 'メールアドレスとパスワードを入力してください';
+      if (!password) {
+        errorDiv.innerText = 'パスワードを入力してください';
         errorDiv.style.display = 'block';
         return;
       }
@@ -160,22 +158,23 @@
       errorDiv.style.display = 'none';
 
       try {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-          email: email,
-          password: password
+        // admin.htmlで実装したRPC関数名（例: verify_admin_password）に合わせて呼び出します
+        const { data, error } = await supabaseClient.rpc('verify_admin_password', {
+          p_password: password
         });
 
-        if (error) {
-          throw error;
-        }
+        if (error) throw error;
 
-        if (data.session) {
+        if (data === true) {
           document.getElementById('authOverlay').style.display = 'none';
           document.getElementById('mainContent').style.display = 'block';
+        } else {
+          errorDiv.innerText = 'パスワードが正しくありません';
+          errorDiv.style.display = 'block';
         }
       } catch (err) {
         console.error('認証エラー:', err);
-        errorDiv.innerText = 'ログイン情報が正しくありません';
+        errorDiv.innerText = '認証処理でエラーが発生しました';
         errorDiv.style.display = 'block';
       } finally {
         authBtn.disabled = false;
@@ -224,7 +223,7 @@
       submitBtn.innerText = '送信中...';
       resultDiv.style.display = 'none';
 
-      // 先行エントリー用のダミー受入期間パラメータ
+      // 先行エントリー用の受入期間パラメータ
       const dummyStart = "2026-09-19T00:00:00+09:00";
       const dummyEnd = "2026-10-16T23:59:59+09:00";
 
