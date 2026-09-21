@@ -31,7 +31,7 @@
     .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 
-    /* パスワード認証モーダル */
+    /* 認証モーダル */
     #authOverlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 1000;
@@ -49,10 +49,11 @@
   <div id="authOverlay">
     <div class="auth-box">
       <h3>【KPBA関係者専用】</h3>
-      <p style="font-size: 14px; color: #666;">パスワードを入力してください</p>
+      <p style="font-size: 14px; color: #666;">管理者アカウント情報を入力してください</p>
+      <input type="email" id="authEmail" placeholder="メールアドレス" style="margin-bottom: 12px;">
       <input type="password" id="authPassword" placeholder="パスワード" style="margin-bottom: 12px;" onkeydown="if(event.key==='Enter') verifyPassword()">
-      <button type="button" onclick="verifyPassword()">認証</button>
-      <div id="authError">パスワードが正しくありません</div>
+      <button type="button" id="authBtn" onclick="verifyPassword()">認証</button>
+      <div id="authError">ログイン情報が正しくありません</div>
     </div>
   </div>
 
@@ -103,7 +104,6 @@
       <div class="form-group">
         <label>JAPA連盟所属</label>
         <div class="radio-group">
-          <!-- KPBA先行用のため「はい」をデフォルトチェック -->
           <label><input type="radio" name="is_japa_member" value="true" checked> はい</label>
           <label><input type="radio" name="is_japa_member" value="false"> いいえ</label>
         </div>
@@ -132,8 +132,6 @@
   </div>
 
   <script>
-    const PASSWORD_ADMIN = "admin2026";
-
     const SUPABASE_URL = 'https://ilwvhrffpsdtrzpynafy.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_NaDQwcft5erHFQcY8BL8Lw_JY7EuadY';
 
@@ -144,16 +142,44 @@
       console.error('Supabase初期化失敗:', e);
     }
 
-    // パスワード認証機能
-    function verifyPassword() {
-      const inputPass = document.getElementById('authPassword').value;
+    // パスワード認証機能（Supabase Auth によるログイン検証）
+    async function verifyPassword() {
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
       const errorDiv = document.getElementById('authError');
+      const authBtn = document.getElementById('authBtn');
 
-      if (inputPass === PASSWORD_ADMIN) {
-        document.getElementById('authOverlay').style.display = 'none';
-        document.getElementById('mainContent').style.display = 'block';
-      } else {
+      if (!email || !password) {
+        errorDiv.innerText = 'メールアドレスとパスワードを入力してください';
         errorDiv.style.display = 'block';
+        return;
+      }
+
+      authBtn.disabled = true;
+      authBtn.innerText = '認証中...';
+      errorDiv.style.display = 'none';
+
+      try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        if (data.session) {
+          document.getElementById('authOverlay').style.display = 'none';
+          document.getElementById('mainContent').style.display = 'block';
+        }
+      } catch (err) {
+        console.error('認証エラー:', err);
+        errorDiv.innerText = 'ログイン情報が正しくありません';
+        errorDiv.style.display = 'block';
+      } finally {
+        authBtn.disabled = false;
+        authBtn.innerText = '認証';
       }
     }
 
@@ -198,7 +224,7 @@
       submitBtn.innerText = '送信中...';
       resultDiv.style.display = 'none';
 
-      // 先行エントリー用のダミー受入期間パラメータ（確実に受付を通過させる）
+      // 先行エントリー用のダミー受入期間パラメータ
       const dummyStart = "2026-09-19T00:00:00+09:00";
       const dummyEnd = "2026-10-16T23:59:59+09:00";
 
@@ -230,7 +256,6 @@
             ステータス: <strong>${data.status === 'confirmed' ? '枠内確定' : 'キャンセル待ち'}</strong><br>
             エントリーID: #${data.entry_id}
           `;
-          // 連続入力の誤動作防止のためフォームクリア等の制御も可能
         } else {
           resultDiv.className = 'error';
           resultDiv.innerHTML = `<strong>エラー:</strong> ${data.message}`;

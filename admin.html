@@ -151,7 +151,7 @@
     <div id="login-section" class="card">
       <h2>運営ログイン</h2>
       <p>パスワードを入力してください</p>
-      <input type="password" id="password-input" placeholder="パスワード">
+      <input type="password" id="password-input" placeholder="パスワード" onkeydown="if(event.key==='Enter') login()">
       <button onclick="login()">ログイン</button>
       <div id="error-msg"></div>
     </div>
@@ -214,55 +214,86 @@
 
   <script>
     // --- ★Supabase接続情報の設定 ---
-    // ※ index.html で使用されているものと同じURL・キーを設定してください
     const SUPABASE_URL = 'https://ilwvhrffpsdtrzpynafy.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_NaDQwcft5erHFQcY8BL8Lw_JY7EuadY';
-    
-    // パスワード設定
-    const ADMIN_PASSWORD = 'admin2026';
 
-    // Supabaseクライアントの初期化（変数名を AppSupabase に変更して衝突を回避）
+    // Supabaseクライアントの初期化
     const AppSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentEntriesData = [];
 
-    // パスワード認証（セッション状態の確認）
+    // 自動ログインチェック（保存されたパスワードで検証）
     window.addEventListener('DOMContentLoaded', () => {
-      if (sessionStorage.getItem('admin_authenticated') === 'true') {
-        showDashboard();
+      const savedPassword = sessionStorage.getItem('admin_password');
+      if (savedPassword) {
+        verifyAndLoadData(savedPassword);
       }
     });
 
-    function login() {
-      const input = document.getElementById('password-input').value;
-      if (input === ADMIN_PASSWORD) {
-        sessionStorage.setItem('admin_authenticated', 'true');
-        showDashboard();
-      } else {
-        document.getElementById('error-msg').innerText = 'パスワードが正しくありません。';
+    // ログイン処理
+    async function login() {
+      const inputPassword = document.getElementById('password-input').value;
+      const errorMsg = document.getElementById('error-msg');
+      errorMsg.innerText = '';
+
+      if (!inputPassword) {
+        errorMsg.innerText = 'パスワードを入力してください。';
+        return;
+      }
+
+      await verifyAndLoadData(inputPassword);
+    }
+
+    // サーバー認証 ＆ データ読み込み関数
+    async function verifyAndLoadData(password) {
+      const errorMsg = document.getElementById('error-msg');
+
+      try {
+        // Supabaseサーバー側の認証付きRPC関数を呼び出す
+        const { data, error } = await AppSupabase.rpc('get_admin_entries', {
+          p_admin_password: password
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        // 認証成功時：パスワードをセッションに保持しダッシュボードを表示
+        sessionStorage.setItem('admin_password', password);
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('dashboard-section').classList.remove('hidden');
+
+        currentEntriesData = data;
+        renderTable(data);
+        updateStats(data);
+
+      } catch (err) {
+        console.error('Authentication or Fetch Error:', err);
+        sessionStorage.removeItem('admin_password');
+        errorMsg.innerText = 'パスワードが正しくありません。（またはアクセス制限中）';
       }
     }
 
+    // ログアウト処理
     function logout() {
-      sessionStorage.removeItem('admin_authenticated');
+      sessionStorage.removeItem('admin_password');
       location.reload();
     }
 
-    function showDashboard() {
-      document.getElementById('login-section').classList.add('hidden');
-      document.getElementById('dashboard-section').classList.remove('hidden');
-      fetchEntries();
-    }
-
-    // エントリーデータの取得
+    // 手動のデータ再取得ボタン用
     async function fetchEntries() {
+      const savedPassword = sessionStorage.getItem('admin_password');
+      if (!savedPassword) {
+        logout();
+        return;
+      }
+
       const tbody = document.getElementById('entries-tbody');
       tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;">最新データを取得中...</td></tr>';
 
       try {
-        const { data, error } = await AppSupabase
-          .from('entries')
-          .select('*')
-          .order('created_at', { ascending: true });
+        const { data, error } = await AppSupabase.rpc('get_admin_entries', {
+          p_admin_password: savedPassword
+        });
 
         if (error) throw error;
 
@@ -271,7 +302,7 @@
         updateStats(data);
       } catch (err) {
         console.error('Error fetching data:', err);
-        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color:red;">データの取得に失敗しました。</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color:red;">データの取得に失敗しました。認証エラーの可能性があります。</td></tr>';
       }
     }
 
