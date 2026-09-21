@@ -141,46 +141,46 @@
       console.error('Supabase初期化失敗:', e);
     }
 
-    // パスワード検証処理（RPC呼び出しによる検証）
-    async function verifyPassword() {
-      const password = document.getElementById('authPassword').value;
-      const errorDiv = document.getElementById('authError');
-      const authBtn = document.getElementById('authBtn');
+// パスワード認証機能（admin.html と同じ get_admin_entries RPCを利用）
+async function verifyPassword() {
+  const passwordInput = document.getElementById('authPassword');
+  const password = passwordInput.value;
+  const errorDiv = document.getElementById('authError');
+  const authBtn = document.getElementById('authBtn');
 
-      if (!password) {
-        errorDiv.innerText = 'パスワードを入力してください';
-        errorDiv.style.display = 'block';
-        return;
-      }
+  if (!password) {
+    errorDiv.innerText = 'パスワードを入力してください';
+    errorDiv.style.display = 'block';
+    return;
+  }
 
-      authBtn.disabled = true;
-      authBtn.innerText = '認証中...';
-      errorDiv.style.display = 'none';
+  authBtn.disabled = true;
+  authBtn.innerText = '認証中...';
+  errorDiv.style.display = 'none';
 
-      try {
-        // admin.htmlで実装したRPC関数名（例: verify_admin_password）に合わせて呼び出します
-        const { data, error } = await supabaseClient.rpc('verify_admin_password', {
-          p_password: password
-        });
+  try {
+    // admin.html と同じRPC関数でパスワードを検証
+    const { data, error } = await supabaseClient.rpc('get_admin_entries', {
+      p_admin_password: password
+    });
 
-        if (error) throw error;
-
-        if (data === true) {
-          document.getElementById('authOverlay').style.display = 'none';
-          document.getElementById('mainContent').style.display = 'block';
-        } else {
-          errorDiv.innerText = 'パスワードが正しくありません';
-          errorDiv.style.display = 'block';
-        }
-      } catch (err) {
-        console.error('認証エラー:', err);
-        errorDiv.innerText = '認証処理でエラーが発生しました';
-        errorDiv.style.display = 'block';
-      } finally {
-        authBtn.disabled = false;
-        authBtn.innerText = '認証';
-      }
+    if (error) {
+      throw error;
     }
+
+    // パスワードが正しい場合（エラーが発生せずデータが返された場合）
+    document.getElementById('authOverlay').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+
+  } catch (err) {
+    console.error('認証エラー:', err);
+    errorDiv.innerText = 'パスワードが正しくありません';
+    errorDiv.style.display = 'block';
+  } finally {
+    authBtn.disabled = false;
+    authBtn.innerText = '認証';
+  }
+}
 
     // CSカード申請中チェックボックスの切替処理
     function toggleCsPending(checkbox) {
