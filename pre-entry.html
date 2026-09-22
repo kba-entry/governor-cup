@@ -11,7 +11,7 @@
     .form-row { display: flex; gap: 10px; }
     .form-row .form-group { flex: 1; }
     label { display: block; margin-bottom: 5px; font-weight: bold; }
-    input[type="text"], input[type="tel"], input[type="email"], input[type="password"] { width: 100%; padding: 8px; box-sizing: border-box; }
+    input[type="text"], input[type="tel"], input[type="email"], input[type="password"], select { width: 100%; padding: 8px; box-sizing: border-box; }
     input:disabled { background-color: #e9ecef; cursor: not-allowed; }
     button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; font-size: 16px; cursor: pointer; }
     button:disabled { background-color: #ccc; cursor: not-allowed; }
@@ -45,7 +45,7 @@
 </head>
 <body>
 
-  <!-- パスワード認証モーダル（パスワード入力のみ） -->
+  <!-- パスワード認証モーダル -->
   <div id="authOverlay">
     <div class="auth-box">
       <h3>【KPBA関係者専用】</h3>
@@ -56,7 +56,7 @@
     </div>
   </div>
 
-  <!-- メインコンテンツ（認証後に表示） -->
+  <!-- メインコンテンツ -->
   <div id="mainContent" style="display: none;">
 
     <h2>第29回神奈川県知事杯<br><span style="color: #007bff; font-size: 0.8em;">【KPBA先行エントリー】</span></h2>
@@ -108,10 +108,10 @@
         </div>
       </div>
 
-      <!-- 追加：住所（住民票のある県を選択） -->
+      <!-- 修正箇所：idを residence_region から address に変更（JavaScript側と統一） -->
       <div class="form-group">
-        <label for="residence_region">住所（住民票のある県を選択）</label>
-        <select id="residence_region" required>
+        <label for="address">住所（住民票のある県を選択）</label>
+        <select id="address" required>
           <option value="神奈川" selected>神奈川</option>
           <option value="関東（東京/長野/山梨/新潟）">関東（東京/長野/山梨/新潟）</option>
           <option value="千葉">千葉</option>
@@ -153,7 +153,7 @@
       console.error('Supabase初期化失敗:', e);
     }
 
-    // パスワード認証機能（admin.html と同じ get_admin_entries RPCを利用）
+    // パスワード認証機能
     async function verifyPassword() {
       const passwordInput = document.getElementById('authPassword');
       const password = passwordInput.value;
@@ -171,7 +171,6 @@
       errorDiv.style.display = 'none';
 
       try {
-        // admin.html と同じRPC関数でパスワードを検証
         const { data, error } = await supabaseClient.rpc('get_admin_entries', {
           p_admin_password: password
         });
@@ -180,7 +179,6 @@
           throw error;
         }
 
-        // パスワードが正しい場合（エラーが発生せずデータが返された場合）
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
 
