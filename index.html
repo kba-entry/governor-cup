@@ -67,19 +67,6 @@
       </div>
     </div>
 
-    <!-- 追加：住所（住民票のある県を選択） -->
-    <div class="form-group">
-      <label for="residence_region">住所（住民票のある県を選択）</label>
-      <div class="field-note">※神奈川県在住もしくは在勤者のみエントリー可能</div>
-      <select id="residence_region" required>
-        <option value="神奈川" selected>神奈川</option>
-        <option value="関東（東京/長野/山梨/新潟）">関東（東京/長野/山梨/新潟）</option>
-        <option value="千葉">千葉</option>
-        <option value="埼玉">埼玉</option>
-        <option value="その他">その他</option>
-      </select>
-    </div>
-
     <div class="form-group">
       <label for="member_id">CSカード番号</label>
       <div class="field-note">※申請中(番号未発行)の方は「CSカード申請中」にチェックを入れてください</div>
@@ -102,6 +89,19 @@
         <label><input type="radio" name="is_japa_member" value="true"> はい</label>
         <label><input type="radio" name="is_japa_member" value="false" checked> いいえ</label>
       </div>
+    </div>
+
+    <!-- 追加：住所（住民票のある県を選択） -->
+    <div class="form-group">
+      <label for="residence_region">住所（住民票のある県を選択）</label>
+      <div class="field-note">※神奈川県在住もしくは在勤者のみエントリー可能</div>
+      <select id="residence_region" required>
+        <option value="神奈川" selected>神奈川</option>
+        <option value="関東（東京/長野/山梨/新潟）">関東（東京/長野/山梨/新潟）</option>
+        <option value="千葉">千葉</option>
+        <option value="埼玉">埼玉</option>
+        <option value="その他">その他</option>
+      </select>
     </div>
 
     <div class="form-group">
