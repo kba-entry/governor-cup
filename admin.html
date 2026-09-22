@@ -332,7 +332,7 @@
             <td>${item.is_cs_pending ? '申請中' : '-'}</td>
             <td>${escapeHtml(item.class_rank || '')}</td>
             <td>${escapeHtml(item.store_affiliation || '')}</td>
-            <td>${escapeHtml(item.address || '')}</td>
+            <td>${escapeHtml(item.residence_region || '')}</td>
             <td>${item.is_japa_member ? '所属あり' : '-'}</td>
             <td>${escapeHtml(item.phone || '')}</td>
             <td>${escapeHtml(item.email || '')}</td>
@@ -377,7 +377,7 @@
         item.is_cs_pending ? '申請中' : 'No',
         item.class_rank || '',
         item.store_affiliation || '',
-        item.address || '',
+        item.residence_region || '',
         item.is_japa_member ? 'Yes' : 'No',
         item.phone || '',
         item.email || ''
