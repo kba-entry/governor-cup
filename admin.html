@@ -197,6 +197,7 @@
               <th>CS申請中</th>
               <th>クラス</th>
               <th>所属店舗</th>
+              <th>住所</th>
               <th>JAPA連盟</th>
               <th>電話番号</th>
               <th>メールアドレス</th>
@@ -204,7 +205,7 @@
           </thead>
           <tbody id="entries-tbody">
             <tr>
-              <td colspan="12" style="text-align:center;">データを読み込み中...</td>
+              <td colspan="13" style="text-align:center;">データを読み込み中...</td>
             </tr>
           </tbody>
         </table>
@@ -288,7 +289,7 @@
       }
 
       const tbody = document.getElementById('entries-tbody');
-      tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;">最新データを取得中...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;">最新データを取得中...</td></tr>';
 
       try {
         const { data, error } = await AppSupabase.rpc('get_admin_entries', {
@@ -302,7 +303,7 @@
         updateStats(data);
       } catch (err) {
         console.error('Error fetching data:', err);
-        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color:red;">データの取得に失敗しました。認証エラーの可能性があります。</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="13" style="text-align:center; color:red;">データの取得に失敗しました。認証エラーの可能性があります。</td></tr>';
       }
     }
 
@@ -310,7 +311,7 @@
     function renderTable(data) {
       const tbody = document.getElementById('entries-tbody');
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;">エントリーデータがありません。</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;">エントリーデータがありません。</td></tr>';
         return;
       }
 
@@ -331,6 +332,7 @@
             <td>${item.is_cs_pending ? '申請中' : '-'}</td>
             <td>${escapeHtml(item.class_rank || '')}</td>
             <td>${escapeHtml(item.store_affiliation || '')}</td>
+            <td>${escapeHtml(item.address || '')}</td>
             <td>${item.is_japa_member ? '所属あり' : '-'}</td>
             <td>${escapeHtml(item.phone || '')}</td>
             <td>${escapeHtml(item.email || '')}</td>
@@ -360,7 +362,7 @@
       const headers = [
         "ID", "受付日時", "ステータス", "姓(漢字)", "名(漢字)", 
         "姓(フリガナ)", "名(フリガナ)", "CSカード番号", "CS申請中", 
-        "クラス", "所属店舗", "JAPA連盟所属", "電話番号", "メールアドレス"
+        "クラス", "所属店舗", "住所", "JAPA連盟所属", "電話番号", "メールアドレス"
       ];
 
       const rows = currentEntriesData.map(item => [
@@ -375,6 +377,7 @@
         item.is_cs_pending ? '申請中' : 'No',
         item.class_rank || '',
         item.store_affiliation || '',
+        item.address || '',
         item.is_japa_member ? 'Yes' : 'No',
         item.phone || '',
         item.email || ''

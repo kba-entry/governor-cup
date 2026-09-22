@@ -11,11 +11,14 @@
     .form-row { display: flex; gap: 10px; }
     .form-row .form-group { flex: 1; }
     label { display: block; margin-bottom: 5px; font-weight: bold; }
-    input[type="text"], input[type="tel"], input[type="email"] { width: 100%; padding: 8px; box-sizing: border-box; }
+    input[type="text"], input[type="tel"], input[type="email"], select { width: 100%; padding: 8px; box-sizing: border-box; font-size: 14px; }
     input:disabled { background-color: #e9ecef; cursor: not-allowed; }
     button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; font-size: 16px; cursor: pointer; }
     button:disabled { background-color: #ccc; cursor: not-allowed; }
     
+    /* 注釈用スタイル */
+    .field-note { font-size: 12px; color: #d9534f; margin-top: 4px; font-weight: normal; }
+
     /* チェックボックス・ラジオボタン用のレイアウト */
     .checkbox-group { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-weight: normal; font-size: 14px; cursor: pointer; }
     .checkbox-group input { width: auto; cursor: pointer; }
@@ -64,8 +67,22 @@
       </div>
     </div>
 
+    <!-- 追加：住所（住民票のある県を選択） -->
+    <div class="form-group">
+      <label for="residence_region">住所（住民票のある県を選択）</label>
+      <div class="field-note">※神奈川県在住もしくは在勤者のみエントリー可能</div>
+      <select id="residence_region" required>
+        <option value="神奈川" selected>神奈川</option>
+        <option value="関東（東京/長野/山梨/新潟）">関東（東京/長野/山梨/新潟）</option>
+        <option value="千葉">千葉</option>
+        <option value="埼玉">埼玉</option>
+        <option value="その他">その他</option>
+      </select>
+    </div>
+
     <div class="form-group">
       <label for="member_id">CSカード番号</label>
+      <div class="field-note">※申請中(番号未発行)の方は「CSカード申請中」にチェックを入れてください</div>
       <input type="text" id="member_id" required placeholder="例：10099999">
       <label class="checkbox-group">
         <input type="checkbox" id="cs_pending" onchange="toggleCsPending(this)">
@@ -78,7 +95,7 @@
       <input type="text" id="class_rank" required value="A">
     </div>
 
-    <!-- 追加：JAPA連盟所属 -->
+    <!-- JAPA連盟所属 -->
     <div class="form-group">
       <label>JAPA連盟所属</label>
       <div class="radio-group">
@@ -89,7 +106,8 @@
 
     <div class="form-group">
       <label for="store_affiliation">所属店舗</label>
-      <input type="text" id="store_affiliation" required placeholder="例：ミッドナイト">
+      <div class="field-note">※未所属の場合は「フリー」と記載してください</div>
+      <input type="text" id="store_affiliation" required placeholder="">
     </div>
 
     <div class="form-group">
@@ -108,10 +126,6 @@
   <div id="result"></div>
 
   <script>
-    // --------------------------------------------------
-    // 設定項目：受付開始日時・終了日時（ISO形式）
-    // テスト時は過去の日時・未来の日時に変更して動作を確認してください
-    // --------------------------------------------------
     const ENTRY_START_AT = "2026-09-25T21:00:00+09:00"; // 開始日時
     const ENTRY_END_AT   = "2026-10-04T23:59:59+09:00"; // 終了日時
 
@@ -125,7 +139,6 @@
       console.error('Supabase初期化失敗:', e);
     }
 
-    // CSカード申請中チェックボックスの切替処理
     function toggleCsPending(checkbox) {
       const memberIdInput = document.getElementById('member_id');
       if (checkbox.checked) {
@@ -138,7 +151,6 @@
       }
     }
 
-    // エントリー時間制御と表示更新を行う関数
     function updateEntryStatus() {
       const now = new Date();
       const startDate = new Date(ENTRY_START_AT);
@@ -148,21 +160,18 @@
       const noticeDiv = document.getElementById('statusNotice');
 
       if (now < startDate) {
-        // 1. 受付開始前
         submitBtn.disabled = true;
         submitBtn.innerText = '受付開始前です';
         noticeDiv.className = 'notice-before';
         noticeDiv.innerText = `【受付前】受付開始は ${startDate.toLocaleString('ja-JP')} からです`;
         return 'BEFORE';
       } else if (now > endDate) {
-        // 2. 受付終了後
         submitBtn.disabled = true;
         submitBtn.innerText = '受付終了しました';
         noticeDiv.className = 'notice-ended';
         noticeDiv.innerText = '【受付終了】エントリーの受付は終了いたしました';
         return 'ENDED';
       } else {
-        // 3. 受付期間内
         submitBtn.disabled = false;
         submitBtn.innerText = '送信する';
         noticeDiv.className = 'notice-open';
@@ -171,11 +180,9 @@
       }
     }
 
-    // 初回実行 ＆ 1秒ごとにステータス監視
     updateEntryStatus();
     setInterval(updateEntryStatus, 1000);
 
-    // 送信処理関数
     async function submitEntry() {
       const currentStatus = updateEntryStatus();
       if (currentStatus !== 'OPEN') {
@@ -190,20 +197,17 @@
       const first_name_kanji = document.getElementById('first_name_kanji').value;
       const last_name_furigana = document.getElementById('last_name_furigana').value;
       const first_name_furigana = document.getElementById('first_name_furigana').value;
+      const residence_region = document.getElementById('residence_region').value; // 追加
       const member_id = document.getElementById('member_id').value;
       const is_cs_pending = document.getElementById('cs_pending').checked;
       const class_rank = document.getElementById('class_rank').value;
-      
-      // JAPA連盟所属の値を取得
       const is_japa_member_val = document.querySelector('input[name="is_japa_member"]:checked').value === 'true';
-
       const store_affiliation = document.getElementById('store_affiliation').value;
       const phone = document.getElementById('phone').value;
       const email = document.getElementById('email').value;
 
-      // バリデーションチェック
       if (!last_name_kanji || !first_name_kanji || !last_name_furigana || !first_name_furigana || 
-          (!is_cs_pending && !member_id) || !class_rank || !store_affiliation || !phone || !email) {
+          !residence_region || (!is_cs_pending && !member_id) || !class_rank || !store_affiliation || !phone || !email) {
         alert('すべての必須項目を入力してください。');
         return;
       }
@@ -227,7 +231,8 @@
           p_end_at: ENTRY_END_AT,
           p_capacity: 112,
           p_is_cs_pending: is_cs_pending,
-          p_is_japa_member: is_japa_member_val
+          p_is_japa_member: is_japa_member_val,
+          p_residence_region: residence_region // 追加
         });
 
         if (error) throw error;

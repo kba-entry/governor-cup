@@ -113,6 +113,18 @@
         <input type="text" id="store_affiliation" required value="KPBA">
       </div>
 
+    <!-- 追加：住所（住民票のある県を選択） -->
+    <div class="form-group">
+      <label for="residence_region">住所（住民票のある県を選択）</label>
+      <select id="residence_region" required>
+        <option value="神奈川" selected>神奈川</option>
+        <option value="関東（東京/長野/山梨/新潟）">関東（東京/長野/山梨/新潟）</option>
+        <option value="千葉">千葉</option>
+        <option value="埼玉">埼玉</option>
+        <option value="その他">その他</option>
+      </select>
+    </div>
+
       <div class="form-group">
         <label for="phone">電話番号</label>
         <input type="tel" id="phone" required placeholder="例：090-1234-5678">
@@ -141,46 +153,46 @@
       console.error('Supabase初期化失敗:', e);
     }
 
-// パスワード認証機能（admin.html と同じ get_admin_entries RPCを利用）
-async function verifyPassword() {
-  const passwordInput = document.getElementById('authPassword');
-  const password = passwordInput.value;
-  const errorDiv = document.getElementById('authError');
-  const authBtn = document.getElementById('authBtn');
+    // パスワード認証機能（admin.html と同じ get_admin_entries RPCを利用）
+    async function verifyPassword() {
+      const passwordInput = document.getElementById('authPassword');
+      const password = passwordInput.value;
+      const errorDiv = document.getElementById('authError');
+      const authBtn = document.getElementById('authBtn');
 
-  if (!password) {
-    errorDiv.innerText = 'パスワードを入力してください';
-    errorDiv.style.display = 'block';
-    return;
-  }
+      if (!password) {
+        errorDiv.innerText = 'パスワードを入力してください';
+        errorDiv.style.display = 'block';
+        return;
+      }
 
-  authBtn.disabled = true;
-  authBtn.innerText = '認証中...';
-  errorDiv.style.display = 'none';
+      authBtn.disabled = true;
+      authBtn.innerText = '認証中...';
+      errorDiv.style.display = 'none';
 
-  try {
-    // admin.html と同じRPC関数でパスワードを検証
-    const { data, error } = await supabaseClient.rpc('get_admin_entries', {
-      p_admin_password: password
-    });
+      try {
+        // admin.html と同じRPC関数でパスワードを検証
+        const { data, error } = await supabaseClient.rpc('get_admin_entries', {
+          p_admin_password: password
+        });
 
-    if (error) {
-      throw error;
+        if (error) {
+          throw error;
+        }
+
+        // パスワードが正しい場合（エラーが発生せずデータが返された場合）
+        document.getElementById('authOverlay').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+
+      } catch (err) {
+        console.error('認証エラー:', err);
+        errorDiv.innerText = 'パスワードが正しくありません';
+        errorDiv.style.display = 'block';
+      } finally {
+        authBtn.disabled = false;
+        authBtn.innerText = '認証';
+      }
     }
-
-    // パスワードが正しい場合（エラーが発生せずデータが返された場合）
-    document.getElementById('authOverlay').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'block';
-
-  } catch (err) {
-    console.error('認証エラー:', err);
-    errorDiv.innerText = 'パスワードが正しくありません';
-    errorDiv.style.display = 'block';
-  } finally {
-    authBtn.disabled = false;
-    authBtn.innerText = '認証';
-  }
-}
 
     // CSカード申請中チェックボックスの切替処理
     function toggleCsPending(checkbox) {
@@ -209,12 +221,13 @@ async function verifyPassword() {
       const class_rank = document.getElementById('class_rank').value;
       const is_japa_member_val = document.querySelector('input[name="is_japa_member"]:checked').value === 'true';
       const store_affiliation = document.getElementById('store_affiliation').value;
+      const address = document.getElementById('address').value;
       const phone = document.getElementById('phone').value;
       const email = document.getElementById('email').value;
 
       // バリデーションチェック
       if (!last_name_kanji || !first_name_kanji || !last_name_furigana || !first_name_furigana || 
-          (!is_cs_pending && !member_id) || !class_rank || !store_affiliation || !phone || !email) {
+          (!is_cs_pending && !member_id) || !class_rank || !store_affiliation || !address || !phone || !email) {
         alert('すべての必須項目を入力してください。');
         return;
       }
@@ -236,6 +249,7 @@ async function verifyPassword() {
           p_member_id: member_id,
           p_class_rank: class_rank,
           p_store_affiliation: store_affiliation,
+          p_address: address,
           p_phone: phone,
           p_email: email,
           p_start_at: dummyStart,
