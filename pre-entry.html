@@ -11,7 +11,7 @@
     .form-row { display: flex; gap: 10px; }
     .form-row .form-group { flex: 1; }
     label { display: block; margin-bottom: 5px; font-weight: bold; }
-    input[type="text"], input[type="tel"], input[type="email"], input[type="password"], select { width: 100%; padding: 8px; box-sizing: border-box; }
+    input[type="text"], input[type="tel"], input[type="email"], input[type="password"], select { width: 100%; padding: 8px; box-sizing: border-box; font-size: 14px; }
     input:disabled { background-color: #e9ecef; cursor: not-allowed; }
     button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; font-size: 16px; cursor: pointer; }
     button:disabled { background-color: #ccc; cursor: not-allowed; }
@@ -45,7 +45,7 @@
 </head>
 <body>
 
-  <!-- パスワード認証モーダル -->
+  <!-- パスワード認証モーダル（パスワード入力のみ） -->
   <div id="authOverlay">
     <div class="auth-box">
       <h3>【KPBA関係者専用】</h3>
@@ -56,7 +56,7 @@
     </div>
   </div>
 
-  <!-- メインコンテンツ -->
+  <!-- メインコンテンツ（認証後に表示） -->
   <div id="mainContent" style="display: none;">
 
     <h2>第29回神奈川県知事杯<br><span style="color: #007bff; font-size: 0.8em;">【KPBA先行エントリー】</span></h2>
@@ -108,10 +108,10 @@
         </div>
       </div>
 
-      <!-- 修正箇所：idを residence_region から address に変更（JavaScript側と統一） -->
+      <!-- 住所選択（index.htmlに合わせて id="residence_region" に設定） -->
       <div class="form-group">
-        <label for="address">住所（住民票のある県を選択）</label>
-        <select id="address" required>
+        <label for="residence_region">住所（住民票のある県を選択）</label>
+        <select id="residence_region" required>
           <option value="神奈川" selected>神奈川</option>
           <option value="関東（東京/長野/山梨/新潟）">関東（東京/長野/山梨/新潟）</option>
           <option value="千葉">千葉</option>
@@ -214,18 +214,18 @@
       const first_name_kanji = document.getElementById('first_name_kanji').value;
       const last_name_furigana = document.getElementById('last_name_furigana').value;
       const first_name_furigana = document.getElementById('first_name_furigana').value;
+      const residence_region = document.getElementById('residence_region').value;
       const member_id = document.getElementById('member_id').value;
       const is_cs_pending = document.getElementById('cs_pending').checked;
       const class_rank = document.getElementById('class_rank').value;
       const is_japa_member_val = document.querySelector('input[name="is_japa_member"]:checked').value === 'true';
       const store_affiliation = document.getElementById('store_affiliation').value;
-      const address = document.getElementById('address').value;
       const phone = document.getElementById('phone').value;
       const email = document.getElementById('email').value;
 
       // バリデーションチェック
       if (!last_name_kanji || !first_name_kanji || !last_name_furigana || !first_name_furigana || 
-          (!is_cs_pending && !member_id) || !class_rank || !store_affiliation || !address || !phone || !email) {
+          !residence_region || (!is_cs_pending && !member_id) || !class_rank || !store_affiliation || !phone || !email) {
         alert('すべての必須項目を入力してください。');
         return;
       }
@@ -247,14 +247,14 @@
           p_member_id: member_id,
           p_class_rank: class_rank,
           p_store_affiliation: store_affiliation,
-          p_address: address,
           p_phone: phone,
           p_email: email,
           p_start_at: dummyStart,
           p_end_at: dummyEnd,
           p_capacity: 112,
           p_is_cs_pending: is_cs_pending,
-          p_is_japa_member: is_japa_member_val
+          p_is_japa_member: is_japa_member_val,
+          p_residence_region: residence_region
         });
 
         if (error) throw error;
