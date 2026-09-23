@@ -91,7 +91,7 @@
       </div>
     </div>
 
-    <!-- 追加：住所（住民票のある県を選択） -->
+    <!-- 住所（住民票のある県を選択） -->
     <div class="form-group">
       <label for="residence_region">住所（住民票のある県を選択）</label>
       <div class="field-note">※神奈川県在住もしくは在勤者のみエントリー可能</div>
@@ -197,7 +197,7 @@
       const first_name_kanji = document.getElementById('first_name_kanji').value;
       const last_name_furigana = document.getElementById('last_name_furigana').value;
       const first_name_furigana = document.getElementById('first_name_furigana').value;
-      const residence_region = document.getElementById('residence_region').value; // 追加
+      const residence_region = document.getElementById('residence_region').value;
       const member_id = document.getElementById('member_id').value;
       const is_cs_pending = document.getElementById('cs_pending').checked;
       const class_rank = document.getElementById('class_rank').value;
@@ -232,7 +232,7 @@
           p_capacity: 112,
           p_is_cs_pending: is_cs_pending,
           p_is_japa_member: is_japa_member_val,
-          p_residence_region: residence_region // 追加
+          p_residence_region: residence_region
         });
 
         if (error) throw error;
@@ -244,6 +244,9 @@
             受付順: <strong>第 ${data.entry_number} 番</strong><br>
             ステータス: <strong>${data.status === 'confirmed' ? '枠内確定' : 'キャンセル待ち'}</strong><br>
             エントリーID: #${data.entry_id}
+            <div style="margin-top: 10px; font-size: 13px; border-top: 1px solid #c3e6cb; padding-top: 8px;">
+              エントリーは完了しました。<br>受付完了メールが届かない場合でも再エントリーは不要です。
+            </div>
           `;
         } else {
           resultDiv.className = 'error';
